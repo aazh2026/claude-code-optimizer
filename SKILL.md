@@ -1,6 +1,46 @@
 ---
 name: claude-code-optimizer
 description: 基于工程实践优化 Claude Code 配置，诊断上下文膨胀、工具冗余、Skills 设计等问题，输出可执行的改进建议。适用于 Claude Code 重度用户进行配置治理和性能调优。
+
+input_schema:
+  project_path:
+    type: string
+    required: true
+    description: 项目根目录路径
+  check_scope:
+    type: string
+    required: false
+    default: "deep"
+    enum: ["basic", "deep"]
+    description: 检查范围
+
+output_schema:
+  summary:
+    type: object
+    properties:
+      context_health: { type: string, enum: ["healthy", "needs_attention", "critical"] }
+      config_score: { type: number }
+      priority_issues: { type: integer }
+  context_audit:
+    type: object
+    properties:
+      fixed_overhead: { type: string }
+      mcp_bloat: { type: string }
+      recommendation: { type: string }
+  action_items:
+    type: array
+    items: { type: string }
+
+verification:
+  - check: "output.config_score >= 0 and output.config_score <= 100"
+    severity: error
+  - check: "len(output.action_items) > 0"
+    severity: error
+  - check: "output.summary.context_health is valid"
+    severity: error
+  - check: "output.priority_issues == count_critical_items(output.action_items)"
+    severity: warning
+
 ---
 
 # Claude Code 优化器
